@@ -1,0 +1,542 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { toast } from 'sonner';
+import { Trophy, Users, UserPlus, Calendar, LogOut, Plus } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+
+interface Tournament {
+  _id: string;
+  name: string;
+  category: string;
+  published: boolean;
+  teams?: any[];
+  games?: any[];
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  players?: any[];
+}
+
+interface Player {
+  _id: string;
+  name: string;
+  number?: number;
+  teamId: any;
+}
+
+export default function AdminPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  // Form states
+  const [newTournament, setNewTournament] = useState({ name: '', category: '' });
+  const [newTeam, setNewTeam] = useState({ name: '', tournamentId: '' });
+  const [newPlayer, setNewPlayer] = useState({ name: '', teamId: '', number: '' });
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
+
+  useEffect(() => {
+    if (selectedTournament) {
+      fetchTeams(selectedTournament);
+    }
+  }, [selectedTournament]);
+
+  const fetchTournaments = async () => {
+    try {
+      const res = await fetch('/api/tournaments');
+      const data = await res.json();
+      setTournaments(data.tournaments || []);
+    } catch (error) {
+      toast.error('Fehler beim Laden der Turniere');
+    }
+  };
+
+  const fetchTeams = async (tournamentId: string) => {
+    try {
+      const res = await fetch(`/api/teams?tournamentId=${tournamentId}`);
+      const data = await res.json();
+      setTeams(data.teams || []);
+
+      const playersRes = await fetch(`/api/players`);
+      const playersData = await playersRes.json();
+      const filteredPlayers = playersData.players.filter((p: Player) => 
+        data.teams.some((t: Team) => t._id === p.teamId._id || t._id === p.teamId)
+      );
+      setPlayers(filteredPlayers);
+    } catch (error) {
+      toast.error('Fehler beim Laden der Teams');
+    }
+  };
+
+  const createTournament = async () => {
+    if (!newTournament.name || !newTournament.category) {
+      toast.error('Bitte alle Felder ausfüllen');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTournament),
+      });
+
+      if (res.ok) {
+        toast.success('Turnier erstellt');
+        setNewTournament({ name: '', category: '' });
+        fetchTournaments();
+      }
+    } catch (error) {
+      toast.error('Fehler beim Erstellen');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createTeam = async () => {
+    if (!newTeam.name || !selectedTournament) {
+      toast.error('Bitte alle Felder ausfüllen');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newTeam, tournamentId: selectedTournament }),
+      });
+
+      if (res.ok) {
+        toast.success('Team erstellt');
+        setNewTeam({ name: '', tournamentId: '' });
+        fetchTeams(selectedTournament);
+      }
+    } catch (error) {
+      toast.error('Fehler beim Erstellen');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createPlayer = async () => {
+    if (!newPlayer.name || !newPlayer.teamId) {
+      toast.error('Bitte alle Felder ausfüllen');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newPlayer.name,
+          teamId: newPlayer.teamId,
+          number: newPlayer.number ? parseInt(newPlayer.number) : undefined,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success('Spieler erstellt');
+        setNewPlayer({ name: '', teamId: '', number: '' });
+        fetchTeams(selectedTournament);
+      }
+    } catch (error) {
+      toast.error('Fehler beim Erstellen');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSchedule = async () => {
+    if (!selectedTournament) {
+      toast.error('Bitte Turnier auswählen');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/generate-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId: selectedTournament }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(`Spielplan erstellt: ${data.gamesCount} Spiele`);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      toast.error('Fehler beim Erstellen des Spielplans');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePublished = async (tournamentId: string, published: boolean) => {
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: !published }),
+      });
+
+      if (res.ok) {
+        toast.success(published ? 'Turnier deaktiviert' : 'Turnier veröffentlicht');
+        fetchTournaments();
+      }
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren');
+    }
+  };
+
+  if (status === 'loading') {
+    return <div className="flex items-center justify-center min-h-screen">Laden...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-8 h-8 text-orange-500" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm text-gray-600">Turnierverwaltung</p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => signOut({ callbackUrl: '/' })}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Abmelden
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="tournaments" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="tournaments">
+              <Trophy className="w-4 h-4 mr-2" />
+              Turniere
+            </TabsTrigger>
+            <TabsTrigger value="teams">
+              <Users className="w-4 h-4 mr-2" />
+              Teams
+            </TabsTrigger>
+            <TabsTrigger value="players">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Spieler
+            </TabsTrigger>
+            <TabsTrigger value="schedule">
+              <Calendar className="w-4 h-4 mr-2" />
+              Spielplan
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tournaments" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Neues Turnier erstellen</CardTitle>
+                <CardDescription>
+                  Lege ein neues Basketball-Turnier an
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tournament-name">Turniername</Label>
+                    <Input
+                      id="tournament-name"
+                      value={newTournament.name}
+                      onChange={(e) => setNewTournament({ ...newTournament, name: e.target.value })}
+                      placeholder="Weihnachtsturnier 2024"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tournament-category">Kategorie</Label>
+                    <Input
+                      id="tournament-category"
+                      value={newTournament.category}
+                      onChange={(e) => setNewTournament({ ...newTournament, category: e.target.value })}
+                      placeholder="U12"
+                    />
+                  </div>
+                </div>
+                <Button onClick={createTournament} disabled={loading}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Turnier erstellen
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Alle Turniere</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Kategorie</TableHead>
+                      <TableHead>Teams</TableHead>
+                      <TableHead>Spiele</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tournaments.map((tournament) => (
+                      <TableRow key={tournament._id}>
+                        <TableCell className="font-medium">{tournament.name}</TableCell>
+                        <TableCell>{tournament.category}</TableCell>
+                        <TableCell>{tournament.teams?.length || 0}</TableCell>
+                        <TableCell>{tournament.games?.length || 0}</TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              tournament.published
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant={tournament.published ? 'outline' : 'default'}
+                            onClick={() => togglePublished(tournament._id, tournament.published)}
+                          >
+                            {tournament.published ? 'Deaktivieren' : 'Veröffentlichen'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="teams" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Neues Team erstellen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Turnier auswählen</Label>
+                    <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Turnier wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tournaments.map((t) => (
+                          <SelectItem key={t._id} value={t._id}>
+                            {t.name} ({t.category})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="team-name">Teamname</Label>
+                    <Input
+                      id="team-name"
+                      value={newTeam.name}
+                      onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                      placeholder="Lakers"
+                    />
+                  </div>
+                </div>
+                <Button onClick={createTeam} disabled={loading || !selectedTournament}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Team erstellen
+                </Button>
+              </CardContent>
+            </Card>
+
+            {selectedTournament && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Teams in diesem Turnier</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Spieleranzahl</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teams.map((team) => (
+                        <TableRow key={team._id}>
+                          <TableCell className="font-medium">{team.name}</TableCell>
+                          <TableCell>{team.players?.length || 0}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="players" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Neuen Spieler erstellen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Team auswählen</Label>
+                    <Select value={newPlayer.teamId} onValueChange={(value) => setNewPlayer({ ...newPlayer, teamId: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Team wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((t) => (
+                          <SelectItem key={t._id} value={t._id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="player-name">Spielername</Label>
+                    <Input
+                      id="player-name"
+                      value={newPlayer.name}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
+                      placeholder="Max Mustermann"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="player-number">Nummer</Label>
+                    <Input
+                      id="player-number"
+                      type="number"
+                      value={newPlayer.number}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, number: e.target.value })}
+                      placeholder="7"
+                    />
+                  </div>
+                </div>
+                <Button onClick={createPlayer} disabled={loading || !newPlayer.teamId}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Spieler erstellen
+                </Button>
+              </CardContent>
+            </Card>
+
+            {players.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alle Spieler</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Nummer</TableHead>
+                        <TableHead>Team</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {players.map((player) => (
+                        <TableRow key={player._id}>
+                          <TableCell className="font-medium">{player.name}</TableCell>
+                          <TableCell>{player.number || '-'}</TableCell>
+                          <TableCell>{player.teamId?.name || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Spielplan generieren</CardTitle>
+                <CardDescription>
+                  Erstellt automatisch einen "Jeder gegen jeden" Spielplan
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Turnier auswählen</Label>
+                  <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Turnier wählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tournaments.map((t) => (
+                        <SelectItem key={t._id} value={t._id}>
+                          {t.name} ({t.category}) - {t.teams?.length || 0} Teams
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={generateSchedule} disabled={loading || !selectedTournament}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Spielplan generieren
+                </Button>
+                <p className="text-sm text-gray-600">
+                  {selectedTournament && teams.length > 0 && (
+                    <span>
+                      Erstellt {(teams.length * (teams.length - 1)) / 2} Spiele für {teams.length} Teams
+                    </span>
+                  )}
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
