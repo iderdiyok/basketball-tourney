@@ -1,15 +1,24 @@
 import mongoose from 'mongoose';
 
-const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/basketball';
+const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017/basketball';
 
 if (!MONGO_URL) {
   throw new Error('Please define the MONGO_URL environment variable');
 }
 
-let cached = global.mongoose;
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+declare global {
+  var mongoose: MongooseCache | undefined;
+}
+
+let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+
+if (!global.mongoose) {
+  global.mongoose = cached;
 }
 
 async function connectDB() {

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trophy, Users, UserPlus, Calendar, LogOut, Plus } from 'lucide-react';
+import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface Tournament {
@@ -37,12 +37,23 @@ interface Player {
   teamId: any;
 }
 
+interface Game {
+  _id: string;
+  teamA: { _id: string; name: string };
+  teamB: { _id: string; name: string };
+  status: 'pending' | 'live' | 'finished';
+  scheduledTime?: string;
+  scoreA: number;
+  scoreB: number;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
@@ -64,6 +75,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (selectedTournament) {
       fetchTeams(selectedTournament);
+      fetchGames(selectedTournament);
     }
   }, [selectedTournament]);
 
@@ -91,6 +103,17 @@ export default function AdminPage() {
       setPlayers(filteredPlayers);
     } catch (error) {
       toast.error('Fehler beim Laden der Teams');
+    }
+  };
+
+  const fetchGames = async (tournamentId: string) => {
+    try {
+      const res = await fetch(`/api/games?tournamentId=${tournamentId}`);
+      const data = await res.json();
+      setGames(data.games || []);
+    } catch (error) {
+      toast.error('Fehler beim Laden der Spiele');
+      console.error('Error loading games:', error);
     }
   };
 
@@ -194,6 +217,7 @@ export default function AdminPage() {
 
       if (res.ok) {
         toast.success(`Spielplan erstellt: ${data.gamesCount} Spiele`);
+        fetchGames(selectedTournament); // Reload games after generating schedule
       } else {
         toast.error(data.error);
       }
@@ -219,6 +243,40 @@ export default function AdminPage() {
     } catch (error) {
       toast.error('Fehler beim Aktualisieren');
     }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'live':
+        return <Play className="w-4 h-4" />;
+      case 'finished':
+        return <CheckCircle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Ausstehend</span>;
+      case 'live':
+        return <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Live</span>;
+      case 'finished':
+        return <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Beendet</span>;
+      default:
+        return <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">Unbekannt</span>;
+    }
+  };
+
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (status === 'loading') {
@@ -534,6 +592,56 @@ export default function AdminPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Games Overview */}
+            {selectedTournament && games.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardCheck className="w-6 h-6 text-orange-500" />
+                    Spielplan Übersicht
+                  </CardTitle>
+                  <CardDescription>
+                    Alle Spiele dieses Turniers mit Scoring-Zugang
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {games.map((game) => (
+                      <div key={game._id} className="flex items-center justify-between p-4 border rounded-lg bg-white">
+                        <div className="flex items-center gap-4">
+                          {getStatusIcon(game.status)}
+                          <div>
+                            <h4 className="font-semibold">
+                              {game.teamA.name} vs {game.teamB.name}
+                            </h4>
+                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                              {getStatusBadge(game.status)}
+                              <span>Zeit: {formatTime(game.scheduledTime)}</span>
+                              {(game.status === 'live' || game.status === 'finished') && (
+                                <span className="font-medium">
+                                  Stand: {game.scoreA} : {game.scoreB}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="secondary"
+                            onClick={() => router.push(`/scorer/${game._id}`)}
+                            className="flex items-center gap-2"
+                          >
+                            <ClipboardCheck className="w-4 h-4" />
+                            Scoring öffnen
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

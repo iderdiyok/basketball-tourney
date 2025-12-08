@@ -26,8 +26,14 @@ export async function GET(
     await connectDB();
 
     const game = await Game.findById(params.id)
-      .populate('teamA')
-      .populate('teamB')
+      .populate({
+        path: 'teamA',
+        populate: { path: 'players' }
+      })
+      .populate({
+        path: 'teamB', 
+        populate: { path: 'players' }
+      })
       .populate('playerStats.playerId');
 
     if (!game) {

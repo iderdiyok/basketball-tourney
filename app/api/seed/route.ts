@@ -48,22 +48,27 @@ export async function POST(request: NextRequest) {
     // Update tournament teams
     tournament.teams = teams.map((t) => t._id);
 
-    // Create players (6 per team = 24 total)
+    // Create players (6 per team = 24 total) with unique names and numbers
     const playerNames = [
-      'Max', 'Leon', 'Felix', 'Paul', 'Jonas', 'Luca',
-      'Noah', 'Ben', 'Elias', 'Finn', 'Tom', 'Luis',
-      'Theo', 'Leo', 'Anton', 'Emil', 'Oskar', 'Henry',
-      'Jakob', 'Samuel', 'David', 'Moritz', 'Adrian', 'Julian',
+      // Lakers Team
+      'Max Müller', 'Leon Schmidt', 'Felix Wagner', 'Paul Fischer', 'Jonas Weber', 'Luca Meyer',
+      // Bulls Team  
+      'Noah Becker', 'Ben Schulz', 'Elias Hoffmann', 'Finn Schäfer', 'Tom Koch', 'Luis Richter',
+      // Warriors Team
+      'Theo Klein', 'Leo Wolf', 'Anton Neumann', 'Emil Schwarz', 'Oskar Zimmermann', 'Henry Braun',
+      // Celtics Team
+      'Jakob Krüger', 'Samuel Hartmann', 'David Lange', 'Moritz Schmitt', 'Adrian Werner', 'Julian Peters',
     ];
 
     let playerIndex = 0;
-    for (const team of teams) {
+    for (let teamIdx = 0; teamIdx < teams.length; teamIdx++) {
+      const team = teams[teamIdx];
       const teamPlayers = [];
       for (let i = 0; i < 6; i++) {
         const player = await Player.create({
           name: playerNames[playerIndex],
           teamId: team._id,
-          number: i + 1,
+          number: i + 1, // Nummer 1-6 pro Team (kann in Teams doppelt vorkommen)
         });
         teamPlayers.push(player._id);
         playerIndex++;
