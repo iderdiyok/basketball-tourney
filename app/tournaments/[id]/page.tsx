@@ -78,11 +78,18 @@ export default function TournamentPublicPage() {
   const calculateRankings = () => {
     if (!tournament) return;
 
+    console.log('Calculating rankings for tournament:', tournament.name);
+    console.log('Total teams:', tournament.teams.length);
+    console.log('Total games:', tournament.games.length);
+    console.log('Finished games:', tournament.games.filter(g => g.status === 'finished').length);
+
     const teamRankings: TeamRanking[] = tournament.teams.map(team => {
       const teamGames = tournament.games.filter(game => 
         (game.teamA._id === team._id || game.teamB._id === team._id) && 
         game.status === 'finished'
       );
+      
+      console.log(`Team ${team.name}: ${teamGames.length} finished games`);
 
       let won = 0;
       let lost = 0;
@@ -98,6 +105,8 @@ export default function TournamentPublicPage() {
         const isTeamA = game.teamA._id === team._id;
         const ownScore = isTeamA ? game.scoreA : game.scoreB;
         const opponentScore = isTeamA ? game.scoreB : game.scoreA;
+        
+        console.log(`Game: ${game.teamA.name} ${game.scoreA} : ${game.scoreB} ${game.teamB.name} - Team ${team.name} scored ${ownScore}`);
 
         totalScored += ownScore;
         totalConceded += opponentScore;
@@ -114,6 +123,8 @@ export default function TournamentPublicPage() {
       // Tournament points: Win = 2, Draw = 1, Loss = 0
       const points = won * 2 + drawn * 1 + lost * 0;
       const scoreDiff = totalScored - totalConceded;
+      
+      console.log(`Team ${team.name} final stats: P${teamGames.length} W${won} D${drawn} L${lost} Pts${points} F${totalScored} A${totalConceded} +/-${scoreDiff}`);
 
       return {
         team,
@@ -171,27 +182,41 @@ export default function TournamentPublicPage() {
     const finishedGames = tournament.games.filter(game => game.status === 'finished');
 
     finishedGames.forEach(game => {
+      console.log('Processing game:', game._id, 'Status:', game.status);
+      console.log('Player stats available:', game.playerStats?.length || 0);
+      
       if (game.playerStats && game.playerStats.length > 0) {
         game.playerStats.forEach(stat => {
+          console.log('Processing player stat:', stat);
+          
           // Handle both populated and non-populated playerId
           let playerId;
           if (typeof stat.playerId === 'string') {
             playerId = stat.playerId;
           } else if (stat.playerId && typeof stat.playerId === 'object') {
+            // If playerId is populated, get the _id
             playerId = String((stat.playerId as any)._id || stat.playerId);
           } else {
             playerId = String(stat.playerId);
           }
           
+          console.log('Mapped playerId:', playerId);
+          
           const existing = playerStatsMap.get(playerId);
           if (existing) {
+            console.log('Updating existing stats for player:', existing.player.name);
             existing.gamesPlayed++;
             existing.totalPoints += stat.total;
             existing.points1Total += stat.points1;
             existing.points2Total += stat.points2;
             existing.points3Total += stat.points3;
+            console.log('Updated stats:', existing);
+          } else {
+            console.log('No player found for ID:', playerId);
           }
         });
+      } else {
+        console.log('No player stats found for game:', game._id);
       }
     });
 
@@ -206,6 +231,9 @@ export default function TournamentPublicPage() {
       points3Total: stats.points3Total,
       avgPointsPerGame: stats.gamesPlayed > 0 ? stats.totalPoints / stats.gamesPlayed : 0,
     }));
+
+    console.log('Final player statistics calculated:', playerStats.length, 'players');
+    console.log('Top 5 scorers:', playerStats.sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 5).map(p => `${p.player.name}: ${p.totalPoints} pts in ${p.gamesPlayed} games`));
 
     setPlayerStats(playerStats);
   };

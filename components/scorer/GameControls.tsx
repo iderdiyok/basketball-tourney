@@ -71,7 +71,7 @@ export function GameControls({
             
             <Button
               onClick={onSave}
-              disabled={isSaving || gameStatus === 'finished'}
+              disabled={isSaving}
               className="bg-green-600 hover:bg-green-700 w-full sm:w-auto h-12"
               size="lg"
             >

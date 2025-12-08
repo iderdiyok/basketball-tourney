@@ -277,7 +277,6 @@ export default function HomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="hover:shadow-lg transition-all text-center p-6 bg-white/10 backdrop-blur-sm border border-white/30 hover:bg-white/15">
-              <div className="text-3xl mb-4">🗓️</div>
               <Calendar className="w-12 h-12 text-red-300 mx-auto mb-4" />
               <CardTitle className="text-xl mb-3 text-white">Live Spielplan</CardTitle>
               <CardDescription className="text-base text-green-100">
@@ -286,7 +285,6 @@ export default function HomePage() {
             </Card>
 
             <Card className="hover:shadow-lg transition-all text-center p-6 bg-white/10 backdrop-blur-sm border border-white/30 hover:bg-white/15">
-              <div className="text-3xl mb-4">🏆</div>
               <Trophy className="w-12 h-12 text-yellow-300 mx-auto mb-4" />
               <CardTitle className="text-xl mb-3 text-white">Smart Rankings</CardTitle>
               <CardDescription className="text-base text-green-100">
@@ -295,7 +293,6 @@ export default function HomePage() {
             </Card>
 
             <Card className="hover:shadow-lg transition-all text-center p-6 bg-white/10 backdrop-blur-sm border border-white/30 hover:bg-white/15">
-              <div className="text-3xl mb-4">👨‍🎄</div>
               <Users className="w-12 h-12 text-green-300 mx-auto mb-4" />
               <CardTitle className="text-xl mb-3 text-white">Player Analytics</CardTitle>
               <CardDescription className="text-base text-green-100">

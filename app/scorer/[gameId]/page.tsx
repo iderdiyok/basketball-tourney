@@ -65,29 +65,43 @@ export default function ScorerPage() {
     let interval: NodeJS.Timeout | null = null;
     if (timer.isRunning && timer.startTime) {
       interval = setInterval(() => {
-        const newTimeElapsed = Math.floor((Date.now() - (timer.startTime || 0)) / 1000);
+        const now = Date.now();
+        const newTimeElapsed = Math.floor((now - (timer.startTime || 0)) / 1000);
+        
+        // 1. Halbzeit Ende (1 Minute = 60 Sekunden für Tests)
+        if (newTimeElapsed >= 60 && timer.timeElapsed < 60) {
+          setTimer({ isRunning: false, timeElapsed: 60 }); // Timer stoppen bei exakt 60
+          showSuccessToast('1. Halbzeit beendet', 'Bitte 2. Halbzeit manuell starten!');
+          if (interval) clearInterval(interval);
+          return;
+        }
+        
+        // 2. Halbzeit Ende (2 Minuten = 120 Sekunden für Tests)  
+        if (newTimeElapsed >= 120) {
+          setTimer({ isRunning: false, timeElapsed: 120 }); // Timer stoppen bei exakt 120
+          updateGameStatus('finished');
+          
+          // Automatisches Speichern bei Spielende
+          setTimeout(() => {
+            saveGame();
+          }, 500); // Kurze Verzögerung für UI Update
+          
+          showSuccessToast('Spiel beendet', 'Spielzeit abgelaufen (2x1 Minuten - TEST) - Wird automatisch gespeichert!');
+          if (interval) clearInterval(interval);
+          return;
+        }
+        
+        // Normales Update nur wenn unter den Limits
         setTimer(prev => ({
           ...prev,
           timeElapsed: newTimeElapsed,
         }));
-        
-        // Auto-Beendigung bei 10 Minuten (600 Sekunden) - OHNE Auto-Start
-        if (newTimeElapsed >= 600 && game?.status === 'live') {
-          setTimer(prev => ({ ...prev, isRunning: false, startTime: undefined }));
-          updateGameStatus('finished');
-          showSuccessToast('Spiel beendet', 'Spielzeit abgelaufen (2x5 Minuten)');
-        }
-        // Halbzeit-Pause bei 5 Minuten (300 Sekunden) - OHNE Auto-Start
-        else if (newTimeElapsed >= 300 && newTimeElapsed < 600 && timer.isRunning) {
-          setTimer(prev => ({ ...prev, isRunning: false, startTime: undefined }));
-          showSuccessToast('1. Halbzeit beendet', 'Bitte 2. Halbzeit manuell starten!');
-        }
       }, 100);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timer.isRunning, timer.startTime, game?.status]);
+  }, [timer.isRunning, timer.startTime, timer.timeElapsed]);
 
   const fetchGame = async () => {
     try {
@@ -183,11 +197,18 @@ export default function ScorerPage() {
   };
 
   const startTimer = () => {
-    setTimer(prev => ({
-      ...prev,
-      isRunning: true,
-      startTime: Date.now() - (prev.timeElapsed * 1000), // Berücksichtige bereits verstrichene Zeit
-    }));
+    setTimer(prev => {
+      const currentElapsed = prev.timeElapsed || 0;
+      
+      // Debug-Ausgabe
+      console.log(`startTimer aufgerufen - Aktuelle Zeit: ${currentElapsed}s, Halbzeit: ${currentElapsed < 60 ? '1' : '2'}`);
+      
+      return {
+        ...prev,
+        isRunning: true,
+        startTime: Date.now() - (currentElapsed * 1000), // Berücksichtige bereits verstrichene Zeit
+      };
+    });
     
     // Update game status to live NUR beim ersten Start
     if (game && game.status === 'pending') {
@@ -226,9 +247,9 @@ export default function ScorerPage() {
         return;
       }
       
-      // Prüfen ob Spielzeit abgelaufen ist (10 Minuten = 600 Sekunden)
-      if (timer.timeElapsed >= 600) {
-        showErrorToast('Spielzeit abgelaufen', 'Das Spiel ist bereits beendet (2x5 Minuten)');
+      // Prüfen ob Spielzeit abgelaufen ist (2 Minuten = 120 Sekunden für Tests)
+      if (timer.timeElapsed >= 120) {
+        showErrorToast('Spielzeit abgelaufen', 'Das Spiel ist bereits beendet (2x1 Minuten - TEST)');
         return;
       }
 
@@ -543,7 +564,7 @@ export default function ScorerPage() {
                     key={player.playerId}
                     player={player}
                     onAddPoints={addPoints}
-                    disabled={game.status === 'finished'}
+                    disabled={game.status === 'finished' || timer.timeElapsed >= 120 || (timer.timeElapsed >= 60 && !timer.isRunning)}
                     teamColor="blue"
                   />
                 ))}
@@ -566,7 +587,7 @@ export default function ScorerPage() {
                     key={player.playerId}
                     player={player}
                     onAddPoints={addPoints}
-                    disabled={game.status === 'finished'}
+                    disabled={game.status === 'finished' || timer.timeElapsed >= 120 || (timer.timeElapsed >= 60 && !timer.isRunning)}
                     teamColor="red"
                   />
                 ))}

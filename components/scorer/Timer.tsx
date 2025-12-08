@@ -23,15 +23,19 @@ export function Timer({
   onReset, 
   disabled = false 
 }: TimerProps) {
-  // const HALF_TIME_DURATION = 5 * 60; // 5 Minuten pro Halbzeit (PRODUCTION)
   const HALF_TIME_DURATION = 60; // 1 Minute pro Halbzeit (TESTING)
-  const TOTAL_GAME_TIME = 2 * HALF_TIME_DURATION; // 2x5 Minuten
+  // const HALF_TIME_DURATION = 5 * 60; // 5 Minuten pro Halbzeit (PRODUCTION)
+  const TOTAL_GAME_TIME = 2 * HALF_TIME_DURATION; // 2x1 Minuten für Tests
   
   const getCurrentHalf = (seconds: number): 1 | 2 => {
     return seconds < HALF_TIME_DURATION ? 1 : 2;
   };
   
   const getRemainingTime = (seconds: number): number => {
+    if (seconds >= TOTAL_GAME_TIME) {
+      return 0; // Spiel ist beendet, zeige 0:00
+    }
+    
     if (seconds < HALF_TIME_DURATION) {
       // 1. Halbzeit: von 5:00 runter zählen
       return HALF_TIME_DURATION - seconds;
@@ -43,8 +47,8 @@ export function Timer({
   
   const formatTime = (seconds: number): string => {
     const remainingTime = getRemainingTime(seconds);
-    const mins = Math.floor(remainingTime / 60);
-    const secs = remainingTime % 60;
+    const mins = Math.floor(Math.max(0, remainingTime) / 60);
+    const secs = Math.max(0, remainingTime) % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
@@ -102,7 +106,7 @@ export function Timer({
         <div className="flex justify-center gap-3">
           <Button
             onClick={onStart}
-            disabled={isRunning || disabled || isGameFinished}
+            disabled={isRunning || isGameFinished}
             size="lg"
             className="h-12 w-12 sm:h-14 sm:w-14 bg-green-600 hover:bg-green-700"
           >
@@ -110,7 +114,7 @@ export function Timer({
           </Button>
           <Button
             onClick={onPause}
-            disabled={!isRunning || disabled}
+            disabled={!isRunning || isGameFinished}
             size="lg"
             variant="outline"
             className="h-12 w-12 sm:h-14 sm:w-14"
@@ -122,7 +126,7 @@ export function Timer({
             size="lg"
             variant="outline"
             className="h-12 w-12 sm:h-14 sm:w-14"
-            disabled={disabled}
+            disabled={isGameFinished}
           >
             <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
