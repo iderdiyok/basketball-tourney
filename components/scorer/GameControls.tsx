@@ -3,13 +3,12 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Save, Undo, RotateCcw, Home } from 'lucide-react';
+import { Save, Undo, RotateCcw } from 'lucide-react';
 
 interface GameControlsProps {
   gameStatus: 'pending' | 'live' | 'finished';
   onUndo: () => void;
   onSave: () => void;
-  onGoHome: () => void;
   canUndo: boolean;
   isSaving: boolean;
   lastAction?: string;
@@ -19,7 +18,6 @@ export function GameControls({
   gameStatus,
   onUndo,
   onSave,
-  onGoHome,
   canUndo,
   isSaving,
   lastAction
@@ -77,16 +75,6 @@ export function GameControls({
             >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Speichert...' : 'Spiel speichern'}
-            </Button>
-            
-            <Button
-              onClick={onGoHome}
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto h-12"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Admin
             </Button>
           </div>
         </div>

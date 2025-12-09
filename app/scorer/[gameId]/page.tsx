@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, RotateCcw, Home } from 'lucide-react';
+import { Users, RotateCcw, Home, Trophy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   ClientGame, 
@@ -31,6 +31,10 @@ import { Timer } from '@/components/scorer/Timer';
 import { TeamScore } from '@/components/scorer/TeamScore';
 import { PlayerRow } from '@/components/scorer/PlayerRow';
 import { GameControls } from '@/components/scorer/GameControls';
+
+// Timer-Konstanten (für Tests: 1 Minute pro Halbzeit)
+const FIRST_HALF_DURATION = 60; // Sekunden
+const SECOND_HALF_DURATION = 120; // Total: 2 Minuten
 
 export default function ScorerPage() {
   const params = useParams();
@@ -68,25 +72,25 @@ export default function ScorerPage() {
         const now = Date.now();
         const newTimeElapsed = Math.floor((now - (timer.startTime || 0)) / 1000);
         
-        // 1. Halbzeit Ende (1 Minute = 60 Sekunden für Tests)
-        if (newTimeElapsed >= 60 && timer.timeElapsed < 60) {
-          setTimer({ isRunning: false, timeElapsed: 60 }); // Timer stoppen bei exakt 60
+        // 1. Halbzeit Ende
+        if (newTimeElapsed >= FIRST_HALF_DURATION && timer.timeElapsed < FIRST_HALF_DURATION) {
+          setTimer({ isRunning: false, timeElapsed: FIRST_HALF_DURATION });
           showSuccessToast('1. Halbzeit beendet', 'Bitte 2. Halbzeit manuell starten!');
           if (interval) clearInterval(interval);
           return;
         }
         
-        // 2. Halbzeit Ende (2 Minuten = 120 Sekunden für Tests)  
-        if (newTimeElapsed >= 120) {
-          setTimer({ isRunning: false, timeElapsed: 120 }); // Timer stoppen bei exakt 120
+        // 2. Halbzeit Ende
+        if (newTimeElapsed >= SECOND_HALF_DURATION) {
+          setTimer({ isRunning: false, timeElapsed: SECOND_HALF_DURATION });
           updateGameStatus('finished');
           
           // Automatisches Speichern bei Spielende
           setTimeout(() => {
             saveGame();
-          }, 500); // Kurze Verzögerung für UI Update
+          }, 300);
           
-          showSuccessToast('Spiel beendet', 'Spielzeit abgelaufen (2x1 Minuten - TEST) - Wird automatisch gespeichert!');
+          showSuccessToast('Spiel beendet', 'Spielzeit abgelaufen - Wird automatisch gespeichert!');
           if (interval) clearInterval(interval);
           return;
         }
@@ -136,44 +140,37 @@ export default function ScorerPage() {
   };
 
   const initializeTeamStats = (gameData: ClientGame) => {
-    console.log('Initializing team stats with game data:', gameData);
-    
     // Initialize team A stats
     const teamAPlayers: PlayerScoreData[] = gameData.teamA.players.map(player => {
-      console.log('Processing Team A player:', player);
       const existingStat = gameData.playerStats.find(stat => stat.playerId === player._id);
       const points1 = existingStat?.points1 || 0;
       const points2 = existingStat?.points2 || 0;
       const points3 = existingStat?.points3 || 0;
       return {
         playerId: player._id,
-        playerName: player.name, // Verwende player.name direkt
+        playerName: player.name,
         points1,
         points2,
         points3,
-        total: points1 + 2 * points2 + 3 * points3, // Tatsächliche Punkte
+        total: points1 + 2 * points2 + 3 * points3,
       };
     });
 
     // Initialize team B stats
     const teamBPlayers: PlayerScoreData[] = gameData.teamB.players.map(player => {
-      console.log('Processing Team B player:', player);
       const existingStat = gameData.playerStats.find(stat => stat.playerId === player._id);
       const points1 = existingStat?.points1 || 0;
       const points2 = existingStat?.points2 || 0;
       const points3 = existingStat?.points3 || 0;
       return {
         playerId: player._id,
-        playerName: player.name, // Verwende player.name direkt
+        playerName: player.name,
         points1,
         points2,
         points3,
-        total: points1 + 2 * points2 + 3 * points3, // Tatsächliche Punkte
+        total: points1 + 2 * points2 + 3 * points3,
       };
     });
-
-    console.log('Team A players:', teamAPlayers);
-    console.log('Team B players:', teamBPlayers);
 
     setTeamAStats({
       teamId: gameData.teamA._id,
@@ -199,9 +196,6 @@ export default function ScorerPage() {
   const startTimer = () => {
     setTimer(prev => {
       const currentElapsed = prev.timeElapsed || 0;
-      
-      // Debug-Ausgabe
-      console.log(`startTimer aufgerufen - Aktuelle Zeit: ${currentElapsed}s, Halbzeit: ${currentElapsed < 60 ? '1' : '2'}`);
       
       return {
         ...prev,
@@ -233,10 +227,6 @@ export default function ScorerPage() {
 
   const addPoints = (playerId: string, points: 1 | 2 | 3) => {
     try {
-      console.log('=== addPoints DEBUG START ===');
-      console.log('Player ID:', playerId);
-      console.log('Points:', points);
-      
       if (!game || !teamAStats || !teamBStats) {
         showErrorToast('Fehler', 'Spielerdaten nicht verfügbar');
         return;
@@ -247,18 +237,21 @@ export default function ScorerPage() {
         return;
       }
       
-      // Prüfen ob Spielzeit abgelaufen ist (2 Minuten = 120 Sekunden für Tests)
-      if (timer.timeElapsed >= 120) {
-        showErrorToast('Spielzeit abgelaufen', 'Das Spiel ist bereits beendet (2x1 Minuten - TEST)');
+      // Prüfen ob Spielzeit abgelaufen ist
+      if (timer.timeElapsed >= SECOND_HALF_DURATION) {
+        showErrorToast('Spielzeit abgelaufen', 'Das Spiel ist bereits beendet');
+        return;
+      }
+      
+      // Prüfen ob zwischen den Halbzeiten (Timer gestoppt nach 1. Halbzeit)
+      if (timer.timeElapsed >= FIRST_HALF_DURATION && !timer.isRunning && timer.timeElapsed < SECOND_HALF_DURATION) {
+        showErrorToast('Pause zwischen Halbzeiten', 'Bitte starten Sie die 2. Halbzeit');
         return;
       }
 
       // Exakte Spieler-Suche - nur EINE Übereinstimmung erlaubt
       const teamAPlayer = teamAStats.players.find(p => p.playerId === playerId);
       const teamBPlayer = teamBStats.players.find(p => p.playerId === playerId);
-      
-      console.log('Team A Player found:', teamAPlayer);
-      console.log('Team B Player found:', teamBPlayer);
       
       // Stelle sicher, dass Spieler nur in einem Team ist
       if (teamAPlayer && teamBPlayer) {
@@ -275,9 +268,6 @@ export default function ScorerPage() {
       const targetTeam = isTeamA ? teamAStats : teamBStats;
       const setTargetTeam = isTeamA ? setTeamAStats : setTeamBStats;
       const player = isTeamA ? teamAPlayer : teamBPlayer;
-      
-      console.log('Target Team:', targetTeam.teamName);
-      console.log('Player:', player!.playerName);
 
       // Create action for history
       const action: ScorerAction = {
@@ -486,27 +476,55 @@ export default function ScorerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 p-4">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />
-                <div>
-                  <CardTitle className="text-lg sm:text-2xl">
-                    {teamAStats.teamName} vs {teamBStats.teamName}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    Kampfgericht - Live Scoring
-                  </CardDescription>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
+      {/* Header - matching the tournament pages */}
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {teamAStats.teamName} vs {teamBStats.teamName}
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600">Kampfgericht - Live Scoring</p>
               </div>
             </div>
-          </CardHeader>
-        </Card>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push(`/tournaments/${game.tournamentId}`)}
+                className="w-full sm:w-auto"
+              >
+                <Trophy className="w-4 h-4 mr-2" />
+                Turnier Übersicht
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/')}
+                className="w-full sm:w-auto"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Startseite
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/admin')}
+                className="w-full sm:w-auto"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Admin
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Score & Timer Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Team A Score */}
@@ -525,6 +543,7 @@ export default function ScorerPage() {
             onPause={pauseTimer}
             onReset={resetTimer}
             disabled={game.status === 'finished'}
+            currentHalf={timer.timeElapsed < FIRST_HALF_DURATION ? 1 : 2}
           />
 
           {/* Team B Score */}
@@ -541,7 +560,6 @@ export default function ScorerPage() {
           gameStatus={game.status}
           onUndo={undoLastAction}
           onSave={saveGame}
-          onGoHome={() => router.push('/admin')}
           canUndo={actionHistory.length > 0}
           isSaving={saving}
           lastAction={actionHistory.length > 0 ? actionHistory[actionHistory.length - 1].playerName : undefined}
@@ -564,7 +582,11 @@ export default function ScorerPage() {
                     key={player.playerId}
                     player={player}
                     onAddPoints={addPoints}
-                    disabled={game.status === 'finished' || timer.timeElapsed >= 120 || (timer.timeElapsed >= 60 && !timer.isRunning)}
+                    disabled={
+                      game.status === 'finished' || 
+                      timer.timeElapsed >= SECOND_HALF_DURATION || 
+                      (timer.timeElapsed >= FIRST_HALF_DURATION && !timer.isRunning)
+                    }
                     teamColor="blue"
                   />
                 ))}
@@ -587,7 +609,11 @@ export default function ScorerPage() {
                     key={player.playerId}
                     player={player}
                     onAddPoints={addPoints}
-                    disabled={game.status === 'finished' || timer.timeElapsed >= 120 || (timer.timeElapsed >= 60 && !timer.isRunning)}
+                    disabled={
+                      game.status === 'finished' || 
+                      timer.timeElapsed >= SECOND_HALF_DURATION || 
+                      (timer.timeElapsed >= FIRST_HALF_DURATION && !timer.isRunning)
+                    }
                     teamColor="red"
                   />
                 ))}

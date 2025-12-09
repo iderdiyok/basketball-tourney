@@ -13,6 +13,7 @@ interface TimerProps {
   onPause: () => void;
   onReset: () => void;
   disabled?: boolean;
+  currentHalf?: number;
 }
 
 export function Timer({ 
@@ -21,7 +22,8 @@ export function Timer({
   onStart, 
   onPause, 
   onReset, 
-  disabled = false 
+  disabled = false,
+  currentHalf: propCurrentHalf 
 }: TimerProps) {
   const HALF_TIME_DURATION = 60; // 1 Minute pro Halbzeit (TESTING)
   // const HALF_TIME_DURATION = 5 * 60; // 5 Minuten pro Halbzeit (PRODUCTION)

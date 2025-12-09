@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Trophy } from 'lucide-react';
+import { Trophy, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -85,6 +85,17 @@ export default function LoginPage() {
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>Test-Login: <strong>admin</strong> / <strong>admin123</strong></p>
             <p className="text-xs mt-2">Zuerst /api/seed aufrufen um Daten zu erstellen</p>
+          </div>
+          
+          <div className="mt-6 text-center">
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/')}
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Zurück zur Startseite
+            </Button>
           </div>
         </CardContent>
       </Card>

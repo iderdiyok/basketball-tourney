@@ -427,7 +427,6 @@ export default function KampfgerichtPage() {
           gameStatus={game.status}
           onUndo={undoLastAction}
           onSave={saveGame}
-          onGoHome={() => router.push('/admin')}
           canUndo={actionHistory.length > 0}
           isSaving={saving}
           lastAction={actionHistory.length > 0 ? actionHistory[actionHistory.length - 1].playerName : undefined}

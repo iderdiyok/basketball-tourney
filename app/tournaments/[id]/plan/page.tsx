@@ -48,7 +48,7 @@ export default function TournamentPlanPage() {
       const res = await fetch(`/api/tournaments/${tournamentId}`);
       const data = await res.json();
       
-      if (data.success) {
+      if (res.ok && data.tournament) {
         setTournament(data.tournament);
       } else {
         toast.error('Turnier nicht gefunden');
@@ -65,17 +65,21 @@ export default function TournamentPlanPage() {
       const res = await fetch(`/api/games?tournamentId=${tournamentId}`);
       const data = await res.json();
       
-      if (data.games) {
+      if (res.ok && data.games) {
         // Sort games by scheduled time
         const sortedGames = data.games.sort((a: Game, b: Game) => {
           if (!a.scheduledTime || !b.scheduledTime) return 0;
           return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
         });
         setGames(sortedGames);
+      } else {
+        console.log('No games found or error:', data);
+        setGames([]);
       }
     } catch (error) {
       toast.error('Fehler beim Laden der Spiele');
       console.error('Error loading games:', error);
+      setGames([]);
     } finally {
       setLoading(false);
     }
@@ -161,44 +165,44 @@ export default function TournamentPlanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 p-4">
-      <div className="container mx-auto max-w-6xl">
-        {/* Header */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Trophy className="w-8 h-8 text-orange-500" />
-                <div>
-                  <CardTitle className="text-2xl">{tournament.name}</CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Kategorie: {tournament.category} • Spielplan
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push(`/tournaments/${tournamentId}`)}
-                  className="flex items-center gap-2"
-                >
-                  <Trophy className="w-4 h-4" />
-                  Turnier Übersicht
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push('/')}
-                  className="flex items-center gap-2"
-                >
-                  <Home className="w-4 h-4" />
-                  Startseite
-                </Button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
+      {/* Header - matching the main tournament page */}
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500" />
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{tournament.name}</h1>
+                <p className="text-sm sm:text-base text-gray-600">Kategorie: {tournament.category} • Spielplan</p>
               </div>
             </div>
-          </CardHeader>
-        </Card>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push(`/tournaments/${tournamentId}`)}
+                className="w-full sm:w-auto"
+              >
+                <Trophy className="w-4 h-4 mr-2" />
+                Turnier Übersicht
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/')}
+                className="w-full sm:w-auto"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Startseite
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         {/* Games List */}
         <Card>
           <CardHeader>

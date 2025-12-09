@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle } from 'lucide-react';
+import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface Tournament {
@@ -295,10 +295,16 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-600">Turnierverwaltung</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => signOut({ callbackUrl: '/' })}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Abmelden
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => router.push('/')}>
+                <Home className="w-4 h-4 mr-2" />
+                Startseite
+              </Button>
+              <Button variant="outline" onClick={() => signOut({ callbackUrl: '/' })}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Abmelden
+              </Button>
+            </div>
           </div>
         </div>
       </div>
