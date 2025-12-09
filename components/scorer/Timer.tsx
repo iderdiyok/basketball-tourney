@@ -108,7 +108,7 @@ export function Timer({
         <div className="flex justify-center gap-3">
           <Button
             onClick={onStart}
-            disabled={isRunning || isGameFinished}
+            disabled={disabled || isRunning || isGameFinished}
             size="lg"
             className="h-12 w-12 sm:h-14 sm:w-14 bg-green-600 hover:bg-green-700"
           >
@@ -116,7 +116,7 @@ export function Timer({
           </Button>
           <Button
             onClick={onPause}
-            disabled={!isRunning || isGameFinished}
+            disabled={disabled || !isRunning || isGameFinished}
             size="lg"
             variant="outline"
             className="h-12 w-12 sm:h-14 sm:w-14"
@@ -128,7 +128,7 @@ export function Timer({
             size="lg"
             variant="outline"
             className="h-12 w-12 sm:h-14 sm:w-14"
-            disabled={isGameFinished}
+            disabled={disabled || isGameFinished}
           >
             <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
