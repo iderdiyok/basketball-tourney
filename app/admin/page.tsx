@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home, Edit2, Check, X } from 'lucide-react';
+import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home, Edit2, Check, X, Trash2 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface Tournament {
@@ -71,6 +71,13 @@ export default function AdminPage() {
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<{ [key: string]: string }>({});
+  
+  // Delete confirmation states
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: 'tournament' | 'team' | 'player' | null;
+    id: string | null;
+    name: string | null;
+  }>({ type: null, id: null, name: null });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -343,6 +350,90 @@ export default function AdminPage() {
     }
   };
 
+  const deleteTournament = async (tournamentId: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        toast.success('Turnier und alle zugehörigen Daten gelöscht');
+        fetchTournaments();
+        // Reset selection if current tournament was deleted
+        if (selectedTournament === tournamentId) {
+          setSelectedTournament('');
+          setSelectedTournamentName('');
+          setSelectedTournamentData(null);
+          setTeams([]);
+          setPlayers([]);
+          setGames([]);
+        }
+      } else {
+        toast.error('Fehler beim Löschen des Turniers');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Löschen');
+    } finally {
+      setLoading(false);
+      setDeleteConfirm({ type: null, id: null, name: null });
+    }
+  };
+
+  const deleteTeam = async (teamId: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/teams/${teamId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        toast.success('Team und alle Spieler gelöscht');
+        fetchTeams(selectedTournament);
+      } else {
+        toast.error('Fehler beim Löschen des Teams');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Löschen');
+    } finally {
+      setLoading(false);
+      setDeleteConfirm({ type: null, id: null, name: null });
+    }
+  };
+
+  const deletePlayer = async (playerId: string) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/players/${playerId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        toast.success('Spieler gelöscht');
+        fetchTeams(selectedTournament);
+      } else {
+        toast.error('Fehler beim Löschen des Spielers');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Löschen');
+    } finally {
+      setLoading(false);
+      setDeleteConfirm({ type: null, id: null, name: null });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm.type || !deleteConfirm.id) return;
+
+    if (deleteConfirm.type === 'tournament') {
+      await deleteTournament(deleteConfirm.id);
+    } else if (deleteConfirm.type === 'team') {
+      await deleteTeam(deleteConfirm.id);
+    } else if (deleteConfirm.type === 'player') {
+      await deletePlayer(deleteConfirm.id);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -415,11 +506,52 @@ export default function AdminPage() {
                 <span className="sm:hidden">Logout</span>
               </Button>
             </div>
-          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.type && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Löschen bestätigen
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Möchten Sie <strong>"{deleteConfirm.name}"</strong> wirklich löschen?
+              {deleteConfirm.type === 'tournament' && (
+                <span className="block mt-2 text-red-600 text-sm font-medium">
+                  ⚠️ Dies wird auch alle Teams, Spieler und Spiele in diesem Turnier löschen!
+                </span>
+              )}
+              {deleteConfirm.type === 'team' && (
+                <span className="block mt-2 text-orange-600 text-sm font-medium">
+                  ⚠️ Dies wird auch alle Spieler in diesem Team löschen!
+                </span>
+              )}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm({ type: null, id: null, name: null })}
+                disabled={loading}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {loading ? 'Löschen...' : 'Löschen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {!selectedTournament ? (
           // Tournament Selection View
           <div className="space-y-6">
@@ -493,15 +625,15 @@ export default function AdminPage() {
                       }}
                     >
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg flex items-center gap-2 mb-1">
                               {editingTournament === tournament._id ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 w-full">
                                   <Input
                                     value={editingValues[tournament._id] || ''}
                                     onChange={(e) => setEditingValues({ ...editingValues, [tournament._id]: e.target.value })}
-                                    className="text-lg font-semibold h-8"
+                                    className="text-lg font-semibold h-8 flex-1"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEdit('tournament', tournament._id);
                                       if (e.key === 'Escape') cancelEditing();
@@ -516,12 +648,15 @@ export default function AdminPage() {
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  {tournament.name}
+                                <div className="flex items-center gap-2 w-full">
+                                  <span className="flex-1">{tournament.name}</span>
                                   <Button 
                                     size="sm" 
                                     variant="ghost" 
-                                    onClick={() => startEditing('tournament', tournament._id, tournament.name)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditing('tournament', tournament._id, tournament.name);
+                                    }}
                                     className="h-6 w-6 p-0"
                                   >
                                     <Edit2 className="w-3 h-3" />
@@ -529,29 +664,48 @@ export default function AdminPage() {
                                 </div>
                               )}
                             </CardTitle>
-                            <CardDescription>Kategorie: {tournament.category}</CardDescription>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">
+                            <CardDescription className="mb-2">Kategorie: {tournament.category}</CardDescription>
+                            <div className="text-sm text-gray-600 mb-3 sm:mb-0">
                               {tournament.teams?.length || 0} Teams • {tournament.games?.length || 0} Spiele
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-2 py-1 rounded text-xs ${
-                                  tournament.published
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
-                              </span>
+                          </div>
+                          <div className="flex flex-col sm:items-end gap-2">
+                            <span
+                              className={`px-2 py-1 rounded text-xs self-start sm:self-end ${
+                                tournament.published
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
+                            </span>
+                            <div className="flex gap-1">
                               <Button
                                 size="sm"
                                 variant={tournament.published ? "destructive" : "default"}
-                                onClick={() => togglePublished(tournament._id, tournament.published)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePublished(tournament._id, tournament.published);
+                                }}
                                 className="text-xs px-2 py-1 h-auto"
                               >
-                                {tournament.published ? 'Deaktivieren' : 'Veröffentlichen'}
+                                <span className="hidden sm:inline">{tournament.published ? 'Deaktivieren' : 'Veröffentlichen'}</span>
+                                <span className="sm:hidden">{tournament.published ? 'Aus' : 'Live'}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm({
+                                    type: 'tournament',
+                                    id: tournament._id,
+                                    name: tournament.name
+                                  });
+                                }}
+                                className="text-xs px-2 py-1 h-auto"
+                              >
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
@@ -573,16 +727,17 @@ export default function AdminPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                       <Trophy className="w-5 h-5 text-orange-500" />
                       {selectedTournamentName}
                     </CardTitle>
-                    <CardDescription>Verwalte Teams, Spieler und Spielplan für dieses Turnier</CardDescription>
+                    <CardDescription className="text-sm">Verwalte Teams, Spieler und Spielplan für dieses Turnier</CardDescription>
                   </div>
                   <Button 
                     variant="outline" 
+                    size="sm"
                     onClick={() => {
                       setSelectedTournament('');
                       setSelectedTournamentName('');
@@ -591,26 +746,28 @@ export default function AdminPage() {
                       setPlayers([]);
                       setGames([]);
                     }}
+                    className="self-start sm:self-center"
                   >
-                    ← Zurück zu Turnieren
+                    <span className="hidden sm:inline">← Zurück zu Turnieren</span>
+                    <span className="sm:hidden">← Zurück</span>
                   </Button>
                 </div>
               </CardHeader>
             </Card>
 
             <Tabs defaultValue="teams" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="teams">
-                  <Users className="w-4 h-4 mr-2" />
-                  Teams
+              <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+                <TabsTrigger value="teams" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-2">
+                  <Users className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Teams</span>
                 </TabsTrigger>
-                <TabsTrigger value="players">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Spieler
+                <TabsTrigger value="players" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-2">
+                  <UserPlus className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Spieler</span>
                 </TabsTrigger>
-                <TabsTrigger value="schedule">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Spielplan
+                <TabsTrigger value="schedule" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Spielplan</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -641,23 +798,93 @@ export default function AdminPage() {
                     <CardTitle>Teams in diesem Turnier</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Team</TableHead>
-                          <TableHead>Spieleranzahl</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teams.map((team) => (
-                          <TableRow key={team._id}>
-                            <TableCell className="font-medium">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Team</TableHead>
+                            <TableHead>Spieleranzahl</TableHead>
+                            <TableHead className="w-24">Aktionen</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {teams.map((team) => (
+                            <TableRow key={team._id}>
+                              <TableCell className="font-medium">
+                                {editingTeam === team._id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      value={editingValues[team._id] || ''}
+                                      onChange={(e) => setEditingValues({ ...editingValues, [team._id]: e.target.value })}
+                                      className="font-medium h-8"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEdit('team', team._id);
+                                        if (e.key === 'Escape') cancelEditing();
+                                      }}
+                                      autoFocus
+                                    />
+                                    <Button size="sm" variant="ghost" onClick={() => saveEdit('team', team._id)}>
+                                      <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                      <X className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    {team.name}
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => startEditing('team', team._id, team.name)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>{team.players?.length || 0}</TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => setDeleteConfirm({
+                                    type: 'team',
+                                    id: team._id,
+                                    name: team.name
+                                  })}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {teams.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center text-gray-500 py-8">
+                                Noch keine Teams für dieses Turnier erstellt
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden space-y-3">
+                      {teams.map((team) => (
+                        <Card key={team._id} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
                               {editingTeam === team._id ? (
                                 <div className="flex items-center gap-2">
                                   <Input
                                     value={editingValues[team._id] || ''}
                                     onChange={(e) => setEditingValues({ ...editingValues, [team._id]: e.target.value })}
-                                    className="font-medium h-8"
+                                    className="font-medium h-8 flex-1"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEdit('team', team._id);
                                       if (e.key === 'Escape') cancelEditing();
@@ -672,31 +899,45 @@ export default function AdminPage() {
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  {team.name}
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    onClick={() => startEditing('team', team._id, team.name)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-lg">{team.name}</div>
+                                    <div className="text-sm text-gray-500">{team.players?.length || 0} Spieler</div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => startEditing('team', team._id, team.name)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => setDeleteConfirm({
+                                        type: 'team',
+                                        id: team._id,
+                                        name: team.name
+                                      })}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
-                            </TableCell>
-                            <TableCell>{team.players?.length || 0}</TableCell>
-                          </TableRow>
-                        ))}
-                        {teams.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={2} className="text-center text-gray-500 py-8">
-                              Noch keine Teams für dieses Turnier erstellt
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      {teams.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          Noch keine Teams für dieses Turnier erstellt
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -707,7 +948,7 @@ export default function AdminPage() {
                     <CardTitle>Neuen Spieler erstellen</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className={`grid gap-4 ${selectedTournamentData?.usePlayerNumbers ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                       <div className="space-y-2">
                         <Label>Team auswählen</Label>
                         <Select value={newPlayer.teamId} onValueChange={(value) => setNewPlayer({ ...newPlayer, teamId: value })}>
@@ -733,7 +974,7 @@ export default function AdminPage() {
                         />
                       </div>
                       {selectedTournamentData?.usePlayerNumbers && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                           <Label htmlFor="player-number">Nummer (optional)</Label>
                           <Input
                             id="player-number"
@@ -757,24 +998,95 @@ export default function AdminPage() {
                     <CardTitle>Alle Spieler in diesem Turnier</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          {selectedTournamentData?.usePlayerNumbers && <TableHead>Nummer</TableHead>}
-                          <TableHead>Team</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {players.map((player) => (
-                          <TableRow key={player._id}>
-                            <TableCell className="font-medium">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            {selectedTournamentData?.usePlayerNumbers && <TableHead>Nummer</TableHead>}
+                            <TableHead>Team</TableHead>
+                            <TableHead className="w-24">Aktionen</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {players.map((player) => (
+                            <TableRow key={player._id}>
+                              <TableCell className="font-medium">
+                                {editingPlayer === player._id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      value={editingValues[player._id] || ''}
+                                      onChange={(e) => setEditingValues({ ...editingValues, [player._id]: e.target.value })}
+                                      className="font-medium h-8"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEdit('player', player._id);
+                                        if (e.key === 'Escape') cancelEditing();
+                                      }}
+                                      autoFocus
+                                    />
+                                    <Button size="sm" variant="ghost" onClick={() => saveEdit('player', player._id)}>
+                                      <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                      <X className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    {player.name}
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => startEditing('player', player._id, player.name)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                              {selectedTournamentData?.usePlayerNumbers && <TableCell>{player.number || '-'}</TableCell>}
+                              <TableCell>{player.teamId?.name || '-'}</TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => setDeleteConfirm({
+                                    type: 'player',
+                                    id: player._id,
+                                    name: player.name
+                                  })}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {players.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={selectedTournamentData?.usePlayerNumbers ? 4 : 3} className="text-center text-gray-500 py-8">
+                                Noch keine Spieler für dieses Turnier erstellt
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden space-y-3">
+                      {players.map((player) => (
+                        <Card key={player._id} className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
                               {editingPlayer === player._id ? (
                                 <div className="flex items-center gap-2">
                                   <Input
                                     value={editingValues[player._id] || ''}
                                     onChange={(e) => setEditingValues({ ...editingValues, [player._id]: e.target.value })}
-                                    className="font-medium h-8"
+                                    className="font-medium h-8 flex-1"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEdit('player', player._id);
                                       if (e.key === 'Escape') cancelEditing();
@@ -789,32 +1101,50 @@ export default function AdminPage() {
                                   </Button>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  {player.name}
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
-                                    onClick={() => startEditing('player', player._id, player.name)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-lg flex items-center gap-2">
+                                      {player.name}
+                                      {selectedTournamentData?.usePlayerNumbers && player.number && (
+                                        <span className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">#{player.number}</span>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500">{player.teamId?.name || '-'}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      onClick={() => startEditing('player', player._id, player.name)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => setDeleteConfirm({
+                                        type: 'player',
+                                        id: player._id,
+                                        name: player.name
+                                      })}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
-                            </TableCell>
-                            {selectedTournamentData?.usePlayerNumbers && <TableCell>{player.number || '-'}</TableCell>}
-                            <TableCell>{player.teamId?.name || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                        {players.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={selectedTournamentData?.usePlayerNumbers ? 3 : 2} className="text-center text-gray-500 py-8">
-                              Noch keine Spieler für dieses Turnier erstellt
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      {players.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          Noch keine Spieler für dieses Turnier erstellt
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -848,7 +1178,7 @@ export default function AdminPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <ClipboardCheck className="w-6 h-6 text-orange-500" />
+                        <ClipboardCheck className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
                         Spielplan Übersicht
                       </CardTitle>
                       <CardDescription>
@@ -858,14 +1188,14 @@ export default function AdminPage() {
                     <CardContent>
                       <div className="space-y-4">
                         {games.map((game) => (
-                          <div key={game._id} className="flex items-center justify-between p-4 border rounded-lg bg-white">
-                            <div className="flex items-center gap-4">
+                          <div key={game._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg bg-white gap-3">
+                            <div className="flex items-center gap-3 sm:gap-4 flex-1">
                               {getStatusIcon(game.status)}
-                              <div>
-                                <h4 className="font-semibold">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-sm sm:text-base">
                                   {game.teamA.name} vs {game.teamB.name}
                                 </h4>
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600">
                                   {getStatusBadge(game.status)}
                                   <span>Zeit: {formatTime(game.scheduledTime)}</span>
                                   {(game.status === 'live' || game.status === 'finished') && (
@@ -876,11 +1206,12 @@ export default function AdminPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 self-end sm:self-center">
                               <Button
                                 variant="secondary"
+                                size="sm"
                                 onClick={() => router.push(`/scorer/${game._id}`)}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 text-xs sm:text-sm"
                               >
                                 <ClipboardCheck className="w-4 h-4" />
                                 Scoring öffnen
@@ -890,13 +1221,56 @@ export default function AdminPage() {
                         ))}
                       </div>
                     </CardContent>
-                    </Card>
+                  </Card>
                 )}
               </TabsContent>
             </Tabs>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.type && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              Löschen bestätigen
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Möchten Sie <strong>"{deleteConfirm.name}"</strong> wirklich löschen?
+              {deleteConfirm.type === 'tournament' && (
+                <span className="block mt-2 text-red-600 text-sm font-medium">
+                  ⚠️ Dies wird auch alle Teams, Spieler und Spiele in diesem Turnier löschen!
+                </span>
+              )}
+              {deleteConfirm.type === 'team' && (
+                <span className="block mt-2 text-orange-600 text-sm font-medium">
+                  ⚠️ Dies wird auch alle Spieler in diesem Team löschen!
+                </span>
+              )}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm({ type: null, id: null, name: null })}
+                disabled={loading}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {loading ? 'Löschen...' : 'Löschen'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
