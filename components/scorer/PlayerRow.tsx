@@ -28,26 +28,26 @@ export function PlayerRow({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div>
-            <div className="font-bold text-lg">{player.playerName}</div>
+            <div className="font-bold text-lg sm:text-xl">{player.playerName}</div>
             <div className="text-sm text-gray-500">Spieler</div>
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-2xl sm:text-3xl font-bold ${teamColor === 'blue' ? 'text-blue-600' : 'text-red-600'}`}>
+          <div className={`text-3xl sm:text-2xl lg:text-3xl font-bold ${teamColor === 'blue' ? 'text-blue-600' : 'text-red-600'}`}>
             {player?.total}
           </div>
-          <div className="text-xs text-gray-600">Punkte</div>
+          <div className="text-xs sm:text-sm text-gray-600">Punkte</div>
         </div>
       </div>
 
       {/* Score Buttons */}
-      <div className="grid grid-cols-3 gap-3 mb-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
         <Button
           onClick={() => onAddPoints(player.playerId, 1)}
           disabled={disabled}
           size="lg"
           variant="outline"
-          className="h-14 text-lg font-bold hover:bg-green-50 hover:border-green-300 hover:text-green-700"
+          className="h-16 sm:h-14 text-lg font-bold hover:bg-green-50 hover:border-green-300 hover:text-green-700"
         >
           +1
         </Button>
@@ -56,7 +56,7 @@ export function PlayerRow({
           disabled={disabled}
           size="lg"
           variant="outline"
-          className="h-14 text-lg font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700"
+          className="h-16 sm:h-14 text-lg font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700"
         >
           +2
         </Button>
@@ -65,7 +65,7 @@ export function PlayerRow({
           disabled={disabled}
           size="lg"
           variant="outline"
-          className="h-14 text-lg font-bold hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
+          className="h-16 sm:h-14 text-lg font-bold hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
         >
           +3
         </Button>

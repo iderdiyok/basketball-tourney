@@ -4,6 +4,7 @@ export interface ITournament extends Document {
   name: string;
   category: string;
   published: boolean;
+  usePlayerNumbers?: boolean;
   teams: mongoose.Types.ObjectId[];
   games: mongoose.Types.ObjectId[];
   createdAt: Date;

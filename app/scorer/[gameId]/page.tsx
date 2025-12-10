@@ -479,43 +479,45 @@ export default function ScorerPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
       {/* Header - matching the tournament pages */}
       <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 sm:w-10 sm:h-10 text-orange-500" />
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6">
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-orange-500" />
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">
                   {teamAStats.teamName} vs {teamBStats.teamName}
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600">Kampfgericht - Live Scoring</p>
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600">Kampfgericht - Live Scoring</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push(`/tournaments/${game.tournamentId}`)}
-                className="w-full sm:w-auto"
+                className="flex-1 sm:flex-none"
               >
-                <Trophy className="w-4 h-4 mr-2" />
-                Turnier Übersicht
+                <Trophy className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Turnier</span>
+                <span className="sm:hidden">Turnier</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push('/')}
-                className="w-full sm:w-auto"
+                className="flex-1 sm:flex-none"
               >
-                <Home className="w-4 h-4 mr-2" />
-                Startseite
+                <Home className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Startseite</span>
+                <span className="sm:hidden">Home</span>
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push('/admin')}
-                className="w-full sm:w-auto"
+                className="flex-1 sm:flex-none"
               >
-                <Shield className="w-4 h-4 mr-2" />
+                <Shield className="w-4 h-4 mr-1 sm:mr-2" />
                 Admin
               </Button>
             </div>
@@ -524,9 +526,9 @@ export default function ScorerPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-4 sm:py-8">
-        {/* Score & Timer Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-6 lg:py-8">
+        {/* Score & Timer Layout - Stack on mobile, side-by-side on larger screens */}
+        <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 mb-4 sm:mb-6">
           {/* Team A Score */}
           <TeamScore 
             teamName={teamAStats.teamName}
@@ -565,18 +567,18 @@ export default function ScorerPage() {
           lastAction={actionHistory.length > 0 ? actionHistory[actionHistory.length - 1].playerName : undefined}
         />
 
-        {/* Player Scoring */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mt-6">
+        {/* Player Scoring - Stack on mobile, side-by-side on larger screens */}
+        <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 mt-4 sm:mt-6">
           {/* Team A Players */}
           <Card>
-            <CardHeader className="bg-blue-600 text-white py-3">
-              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <Users className="w-5 h-5" />
+            <CardHeader className="bg-blue-600 text-white py-3 sm:py-4">
+              <CardTitle className="text-base sm:text-lg lg:text-xl flex items-center gap-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                 {teamAStats.teamName} - Spieler
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-4">
+            <CardContent className="p-3 sm:p-4">
+              <div className="space-y-3 sm:space-y-4">
                 {teamAStats.players.map((player) => (
                   <PlayerRow
                     key={player.playerId}
@@ -596,14 +598,14 @@ export default function ScorerPage() {
 
           {/* Team B Players */}
           <Card>
-            <CardHeader className="bg-red-600 text-white py-3">
-              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                <Users className="w-5 h-5" />
+            <CardHeader className="bg-red-600 text-white py-3 sm:py-4">
+              <CardTitle className="text-base sm:text-lg lg:text-xl flex items-center gap-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                 {teamBStats.teamName} - Spieler
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-4">
+            <CardContent className="p-3 sm:p-4">
+              <div className="space-y-3 sm:space-y-4">
                 {teamBStats.players.map((player) => (
                   <PlayerRow
                     key={player.playerId}

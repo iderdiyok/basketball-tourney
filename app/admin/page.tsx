@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home } from 'lucide-react';
 import { signOut } from 'next-auth/react';
@@ -20,6 +21,7 @@ interface Tournament {
   name: string;
   category: string;
   published: boolean;
+  usePlayerNumbers?: boolean;
   teams?: any[];
   games?: any[];
 }
@@ -56,10 +58,11 @@ export default function AdminPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [selectedTournamentName, setSelectedTournamentName] = useState<string>('');
+  const [selectedTournamentData, setSelectedTournamentData] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Form states
-  const [newTournament, setNewTournament] = useState({ name: '', category: '' });
+  const [newTournament, setNewTournament] = useState({ name: '', category: '', usePlayerNumbers: false });
   const [newTeam, setNewTeam] = useState({ name: '', tournamentId: '' });
   const [newPlayer, setNewPlayer] = useState({ name: '', teamId: '', number: '' });
 
@@ -134,7 +137,7 @@ export default function AdminPage() {
 
       if (res.ok) {
         toast.success('Turnier erstellt');
-        setNewTournament({ name: '', category: '' });
+        setNewTournament({ name: '', category: '', usePlayerNumbers: false });
         fetchTournaments();
       }
     } catch (error) {
@@ -287,30 +290,42 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-orange-500" />
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Turnierverwaltung</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Turnierverwaltung</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => router.push('/')}>
-                <Home className="w-4 h-4 mr-2" />
-                Startseite
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => router.push('/')}
+                className="flex-1 sm:flex-none"
+              >
+                <Home className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Startseite</span>
+                <span className="sm:hidden">Home</span>
               </Button>
-              <Button variant="outline" onClick={() => signOut({ callbackUrl: '/' })}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Abmelden
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="flex-1 sm:flex-none"
+              >
+                <LogOut className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Abmelden</span>
+                <span className="sm:hidden">Logout</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {!selectedTournament ? (
           // Tournament Selection View
           <div className="space-y-6">
@@ -342,6 +357,21 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
+                
+                {/* Player Numbers Option */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="use-player-numbers"
+                    checked={newTournament.usePlayerNumbers}
+                    onCheckedChange={(checked) => 
+                      setNewTournament({ ...newTournament, usePlayerNumbers: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="use-player-numbers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Spielernummern verwenden (optional)
+                  </Label>
+                </div>
+                
                 <Button onClick={createTournament} disabled={loading}>
                   <Plus className="w-4 h-4 mr-2" />
                   Turnier erstellen
@@ -365,6 +395,7 @@ export default function AdminPage() {
                       onClick={() => {
                         setSelectedTournament(tournament._id);
                         setSelectedTournamentName(tournament.name);
+                        setSelectedTournamentData(tournament);
                       }}
                     >
                       <CardHeader className="pb-3">
@@ -418,6 +449,7 @@ export default function AdminPage() {
                     onClick={() => {
                       setSelectedTournament('');
                       setSelectedTournamentName('');
+                      setSelectedTournamentData(null);
                       setTeams([]);
                       setPlayers([]);
                       setGames([]);
@@ -505,7 +537,7 @@ export default function AdminPage() {
                     <CardTitle>Neuen Spieler erstellen</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className={`grid gap-4 ${selectedTournamentData?.usePlayerNumbers ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       <div className="space-y-2">
                         <Label>Team auswählen</Label>
                         <Select value={newPlayer.teamId} onValueChange={(value) => setNewPlayer({ ...newPlayer, teamId: value })}>
@@ -530,16 +562,18 @@ export default function AdminPage() {
                           placeholder="Max Mustermann"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="player-number">Nummer</Label>
-                        <Input
-                          id="player-number"
-                          type="number"
-                          value={newPlayer.number}
-                          onChange={(e) => setNewPlayer({ ...newPlayer, number: e.target.value })}
-                          placeholder="7"
-                        />
-                      </div>
+                      {selectedTournamentData?.usePlayerNumbers && (
+                        <div className="space-y-2">
+                          <Label htmlFor="player-number">Nummer (optional)</Label>
+                          <Input
+                            id="player-number"
+                            type="number"
+                            value={newPlayer.number}
+                            onChange={(e) => setNewPlayer({ ...newPlayer, number: e.target.value })}
+                            placeholder="7"
+                          />
+                        </div>
+                      )}
                     </div>
                     <Button onClick={createPlayer} disabled={loading || !newPlayer.teamId || teams.length === 0}>
                       <Plus className="w-4 h-4 mr-2" />
@@ -557,7 +591,7 @@ export default function AdminPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Nummer</TableHead>
+                          {selectedTournamentData?.usePlayerNumbers && <TableHead>Nummer</TableHead>}
                           <TableHead>Team</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -565,13 +599,13 @@ export default function AdminPage() {
                         {players.map((player) => (
                           <TableRow key={player._id}>
                             <TableCell className="font-medium">{player.name}</TableCell>
-                            <TableCell>{player.number || '-'}</TableCell>
+                            {selectedTournamentData?.usePlayerNumbers && <TableCell>{player.number || '-'}</TableCell>}
                             <TableCell>{player.teamId?.name || '-'}</TableCell>
                           </TableRow>
                         ))}
                         {players.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={3} className="text-center text-gray-500 py-8">
+                            <TableCell colSpan={selectedTournamentData?.usePlayerNumbers ? 3 : 2} className="text-center text-gray-500 py-8">
                               Noch keine Spieler für dieses Turnier erstellt
                             </TableCell>
                           </TableRow>

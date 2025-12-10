@@ -72,7 +72,7 @@ export function Timer({
         <div className="mb-4 flex justify-center">
           <Badge 
             variant={isGameFinished ? "destructive" : "default"} 
-            className={`text-lg px-4 py-2 ${
+            className={`text-lg sm:text-base lg:text-lg px-4 py-2 ${
               isGameFinished ? 'bg-red-500' : 
               isFirstHalfFinished && !isGameFinished ? 'bg-yellow-500' : 
               currentHalf === 1 ? 'bg-green-500' : 'bg-blue-500'
@@ -85,7 +85,7 @@ export function Timer({
           </Badge>
         </div>
         
-        <div className={`text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 font-mono ${
+        <div className={`text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 font-mono ${
           isGameFinished ? 'text-red-600' : 
           getRemainingTime(timeElapsed) <= 60 ? 'text-orange-600' : 
           'text-blue-600'
@@ -110,24 +110,24 @@ export function Timer({
             onClick={onStart}
             disabled={disabled || isRunning || isGameFinished}
             size="lg"
-            className="h-12 w-12 sm:h-14 sm:w-14 bg-green-600 hover:bg-green-700"
+            className="h-16 w-16 sm:h-14 sm:w-14 bg-green-600 hover:bg-green-700"
           >
-            <Play className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Play className="w-6 h-6 sm:w-6 sm:h-6" />
           </Button>
           <Button
             onClick={onPause}
             disabled={disabled || !isRunning || isGameFinished}
             size="lg"
             variant="outline"
-            className="h-12 w-12 sm:h-14 sm:w-14"
+            className="h-16 w-16 sm:h-14 sm:w-14"
           >
-            <Pause className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Pause className="w-6 h-6 sm:w-6 sm:h-6" />
           </Button>
           <Button
             onClick={onReset}
             size="lg"
             variant="outline"
-            className="h-12 w-12 sm:h-14 sm:w-14"
+            className="h-16 w-16 sm:h-14 sm:w-14"
             disabled={disabled || isGameFinished}
           >
             <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />

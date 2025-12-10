@@ -7,6 +7,7 @@ const tournamentSchema = z.object({
   name: z.string().min(1),
   category: z.string().min(1),
   published: z.boolean().optional(),
+  usePlayerNumbers: z.boolean().optional(),
 });
 
 export async function GET(request: NextRequest) {

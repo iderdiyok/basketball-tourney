@@ -26,7 +26,9 @@ export default function HomePage() {
   }, []);
 
   const generateSnowflakes = () => {
-    const flakes = Array.from({ length: 50 }, (_, i) => ({
+    // Reduce snowflakes on mobile for better performance
+    const flakeCount = window.innerWidth < 768 ? 20 : 50;
+    const flakes = Array.from({ length: flakeCount }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       delay: Math.random() * 5,
@@ -94,49 +96,50 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section - Christmas Invitation */}
-      <div className="relative overflow-hidden py-20 md:py-32">
+      <div className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-32">
         <div className="absolute inset-0 bg-gradient-to-r from-red-900/90 to-green-900/90"></div>
-        <div className="container mx-auto px-4 relative">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 relative">
           <div className="text-center text-white">
             {/* Logo */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-6 sm:mb-8">
               <div className="relative">
-                <div className="absolute -inset-4 bg-white/20 rounded-full blur-lg animate-pulse"></div>
-                <div className="relative bg-white rounded-full p-4">
+                <div className="absolute -inset-3 sm:-inset-4 bg-white/20 rounded-full blur-lg animate-pulse"></div>
+                <div className="relative bg-white rounded-full p-3 sm:p-4">
                   <Image
                     src={logo}
                     alt="Winsen Baskets Logo"
                     width={120}
                     height={120}
-                    className="w-20 h-20 md:w-24 md:h-24"
+                    className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24"
                   />
                 </div>
               </div>
             </div>
 
             {/* Christmas Invitation */}
-            <div className="max-w-4xl mx-auto mb-12">
-              <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl">
-                <div className="flex justify-center mb-6">                  
+            <div className="max-w-4xl mx-auto mb-8 sm:mb-12">
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-12 border border-white/20 shadow-2xl">
+                <div className="flex justify-center mb-4 sm:mb-6">                  
                   <Image 
                     src={christmasTree} 
                     alt="Blinkender Weihnachtsbaum" 
                     width={80} 
                     height={100}
+                    className="w-12 h-15 sm:w-16 sm:h-20 md:w-20 md:h-25"
                   />
                 </div>
 
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
                   Winsen Baskets Weihnachtsturnier 
                 </h1>
                 
-                <div className="space-y-6 text-lg md:text-xl text-green-100">
-                  <p className="text-xl md:text-2xl mb-6">
+                <div className="space-y-3 sm:space-y-4 lg:space-y-6 text-sm sm:text-base md:text-lg lg:text-xl text-green-100">
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-4 sm:mb-6">
                     Wollen wir mit euch als Jahresabschluss ein kleines Mix Turnier veranstalten.
                   </p>
 
-                  <div className="text-center mt-8">
-                    <p className="text-2xl text-yellow-300 mb-2">🎅 Wir freuen uns auf euch! 🎅</p>
+                  <div className="text-center mt-6 sm:mt-8">
+                    <p className="text-lg sm:text-xl lg:text-2xl text-yellow-300 mb-2">🎅 Wir freuen uns auf euch! 🎅</p>
                   </div>
                 </div>
               </div>
@@ -145,7 +148,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-8 sm:py-12 lg:py-16">
         {/* Active Tournaments Section */}
         {loading ? (
           <div className="text-center mb-16">
@@ -175,7 +178,7 @@ export default function HomePage() {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
               {tournaments.map((tournament, index) => {
                 const finishedGames = getFinishedGamesCount(tournament);
                 const totalGames = getTotalGamesCount(tournament);
@@ -184,7 +187,7 @@ export default function HomePage() {
                 
                 return (
                   <Card key={tournament._id} className="group hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 border-white/30 hover:border-yellow-300 overflow-hidden bg-white/10 backdrop-blur-sm">
-                    <CardHeader className={`text-white py-8 relative ${
+                    <CardHeader className={`text-white py-4 sm:py-6 lg:py-8 relative ${
                       index % 2 === 0 ? 'bg-gradient-to-r from-red-600/90 to-red-700/90' : 'bg-gradient-to-r from-green-600/90 to-green-700/90'
                     }`}>
                       <div className="absolute top-4 left-4">
