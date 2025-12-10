@@ -23,7 +23,7 @@ describe('Timer Component', () => {
       <Timer {...mockTimerProps} />
     )
 
-    expect(screen.getByText('01:00')).toBeInTheDocument() // 1 minute countdown
+    expect(screen.getByText('05:00')).toBeInTheDocument() // 5 minute countdown
     // Check for first half badge with specific styling
     const halfTimeBadges = screen.getAllByText('1. Halbzeit')
     const halfTimeBadge = halfTimeBadges.find(el => 
@@ -66,7 +66,7 @@ describe('Timer Component', () => {
     render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={30}
+        timeElapsed={150}
       />
     )
 
@@ -82,12 +82,12 @@ describe('Timer Component', () => {
     render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={75}
+        timeElapsed={375}
         currentHalf={2}
       />
     )
 
-    expect(screen.getByText('00:45')).toBeInTheDocument() // 120-75 = 45 seconds
+    expect(screen.getByText('03:45')).toBeInTheDocument() // 600-375 = 225s => 3:45
     // Check for second half badge with specific styling
     const halfTimeBadges = screen.getAllByText('2. Halbzeit')
     const halfTimeBadge = halfTimeBadges.find(el => 
@@ -100,7 +100,7 @@ describe('Timer Component', () => {
     render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={120}
+        timeElapsed={600}
       />
     )
 
@@ -125,7 +125,7 @@ describe('Timer Component', () => {
     render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={120} // Game finished
+        timeElapsed={600} // Game finished
       />
     )
 
@@ -139,7 +139,7 @@ describe('Timer Component', () => {
     render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={60} // End of first half
+        timeElapsed={300} // End of first half
         currentHalf={1}
       />
     )
@@ -151,7 +151,7 @@ describe('Timer Component', () => {
     const { container } = render(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={60} // Half way through game
+        timeElapsed={300} // Half way through game
       />
     )
 
@@ -183,12 +183,12 @@ describe('Timer Component', () => {
       />
     )
 
-    expect(screen.getByText('01:00')).toBeInTheDocument()
+    expect(screen.getByText('05:00')).toBeInTheDocument()
 
     rerender(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={59}
+        timeElapsed={299}
       />
     )
     
@@ -197,7 +197,7 @@ describe('Timer Component', () => {
     rerender(
       <Timer 
         {...mockTimerProps}
-        timeElapsed={120}
+        timeElapsed={600}
       />
     )
     

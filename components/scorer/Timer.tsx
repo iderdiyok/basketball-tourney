@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Timer as TimerIcon, Play, Pause, RotateCcw, Clock } from 'lucide-react';
+import { HALF_TIME_DURATION_SECONDS, TOTAL_GAME_TIME_SECONDS, formatSecondsToMMSS } from '@/lib/gameConfig';
 
 interface TimerProps {
   isRunning: boolean;
@@ -25,9 +26,9 @@ export function Timer({
   disabled = false,
   currentHalf: propCurrentHalf 
 }: TimerProps) {
-  const HALF_TIME_DURATION = 60; // 1 Minute pro Halbzeit (TESTING)
-  // const HALF_TIME_DURATION = 5 * 60; // 5 Minuten pro Halbzeit (PRODUCTION)
-  const TOTAL_GAME_TIME = 2 * HALF_TIME_DURATION; // 2x1 Minuten für Tests
+  const HALF_TIME_DURATION = HALF_TIME_DURATION_SECONDS;
+  const TOTAL_GAME_TIME = TOTAL_GAME_TIME_SECONDS;
+  const halfMinutes = Math.floor(HALF_TIME_DURATION / 60);
   
   const getCurrentHalf = (seconds: number): 1 | 2 => {
     return seconds < HALF_TIME_DURATION ? 1 : 2;
@@ -49,9 +50,7 @@ export function Timer({
   
   const formatTime = (seconds: number): string => {
     const remainingTime = getRemainingTime(seconds);
-    const mins = Math.floor(Math.max(0, remainingTime) / 60);
-    const secs = Math.max(0, remainingTime) % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return formatSecondsToMMSS(remainingTime);
   };
   
   const isGameFinished = timeElapsed >= TOTAL_GAME_TIME;
@@ -64,7 +63,7 @@ export function Timer({
       <CardHeader className="py-3 sm:py-4">
         <CardTitle className="text-center flex items-center justify-center gap-2 text-lg sm:text-xl">
           <TimerIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          Spielzeit (2 x 5 Min)
+          Spielzeit (2 x {halfMinutes} Min)
         </CardTitle>
       </CardHeader>
       <CardContent className="text-center py-4">
@@ -151,9 +150,9 @@ export function Timer({
             ></div>
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>5:00</span>
-            <span className="text-center">0:00 / 5:00</span>
-            <span>0:00</span>
+            <span>{formatSecondsToMMSS(HALF_TIME_DURATION)}</span>
+            <span className="text-center">{formatSecondsToMMSS(0)} / {formatSecondsToMMSS(HALF_TIME_DURATION)}</span>
+            <span>{formatSecondsToMMSS(0)}</span>
           </div>
         </div>
       </CardContent>

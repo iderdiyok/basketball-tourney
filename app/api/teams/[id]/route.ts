@@ -52,3 +52,29 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectDB();
+
+    // Import Player model
+    const Player = (await import('@/lib/models/Player')).default;
+
+    // Delete all players in this team
+    await Player.deleteMany({ teamId: params.id });
+
+    // Delete the team
+    const team = await Team.findByIdAndDelete(params.id);
+
+    if (!team) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Team and all players deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

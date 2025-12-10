@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { BuyMeCoffee } from '@/components/ui/buy-me-coffee';
 import { 
   Trophy, Calendar, Users, Eye, TrendingUp, Shield, Timer, PlayCircle, 
   Gift, Star, Sparkles, Heart, Clock, MapPin
@@ -65,7 +66,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-green-800 to-red-800 relative overflow-hidden">
       {/* Navigation */}
       <nav className="relative z-20 p-4">
-        <div className="container mx-auto flex justify-end">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <BuyMeCoffee size="sm" className="hidden sm:block" />
+          </div>
           <Link href="/admin">
             <Button 
               size="sm" 
@@ -312,11 +316,19 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold text-white mb-4">
               Frohe Weihnachten und erfolgreiche Turniere!
             </h3>
-            <p className="text-green-100 text-lg">
+            <p className="text-green-100 text-lg mb-6">
               Wir wünschen allen Teams, Spielern und Familien eine wunderbare Weihnachtszeit 
               und spannende Basketball-Spiele beim Winsen Baskets Weihnachtsturnier 2025!
             </p>
-            <div className="text-3xl mt-4">🎅🏀❄️</div>
+            <div className="text-3xl mb-6">🎅🏀❄️</div>
+            
+            {/* Buy me a coffee button in footer */}
+            <div className="flex justify-center mb-4">
+              <BuyMeCoffee size="lg" />
+            </div>
+            <p className="text-xs text-green-200">
+              Diese App wurde mit ❤️ entwickelt. Unterstützen Sie die Entwicklung!
+            </p>
           </div>
         </div>
       </div>

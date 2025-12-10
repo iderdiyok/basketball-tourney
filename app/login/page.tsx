@@ -83,8 +83,6 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Test-Login: <strong>admin</strong> / <strong>admin123</strong></p>
-            <p className="text-xs mt-2">Zuerst /api/seed aufrufen um Daten zu erstellen</p>
           </div>
           
           <div className="mt-6 text-center">
