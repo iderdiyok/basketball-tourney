@@ -55,6 +55,7 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
+  const [selectedTournamentName, setSelectedTournamentName] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -310,27 +311,9 @@ export default function AdminPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="tournaments" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="tournaments">
-              <Trophy className="w-4 h-4 mr-2" />
-              Turniere
-            </TabsTrigger>
-            <TabsTrigger value="teams">
-              <Users className="w-4 h-4 mr-2" />
-              Teams
-            </TabsTrigger>
-            <TabsTrigger value="players">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Spieler
-            </TabsTrigger>
-            <TabsTrigger value="schedule">
-              <Calendar className="w-4 h-4 mr-2" />
-              Spielplan
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tournaments" className="space-y-6">
+        {!selectedTournament ? (
+          // Tournament Selection View
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Neues Turnier erstellen</CardTitle>
@@ -368,288 +351,314 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Alle Turniere</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kategorie</TableHead>
-                      <TableHead>Teams</TableHead>
-                      <TableHead>Spiele</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tournaments.map((tournament) => (
-                      <TableRow key={tournament._id}>
-                        <TableCell className="font-medium">{tournament.name}</TableCell>
-                        <TableCell>{tournament.category}</TableCell>
-                        <TableCell>{tournament.teams?.length || 0}</TableCell>
-                        <TableCell>{tournament.games?.length || 0}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              tournament.published
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant={tournament.published ? 'outline' : 'default'}
-                            onClick={() => togglePublished(tournament._id, tournament.published)}
-                          >
-                            {tournament.published ? 'Deaktivieren' : 'Veröffentlichen'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="teams" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Neues Team erstellen</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Turnier auswählen</Label>
-                    <Select value={selectedTournament} onValueChange={setSelectedTournament}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Turnier wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tournaments.map((t) => (
-                          <SelectItem key={t._id} value={t._id}>
-                            {t.name} ({t.category})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="team-name">Teamname</Label>
-                    <Input
-                      id="team-name"
-                      value={newTeam.name}
-                      onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                      placeholder="Lakers"
-                    />
-                  </div>
-                </div>
-                <Button onClick={createTeam} disabled={loading || !selectedTournament}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Team erstellen
-                </Button>
-              </CardContent>
-            </Card>
-
-            {selectedTournament && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teams in diesem Turnier</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Team</TableHead>
-                        <TableHead>Spieleranzahl</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teams.map((team) => (
-                        <TableRow key={team._id}>
-                          <TableCell className="font-medium">{team.name}</TableCell>
-                          <TableCell>{team.players?.length || 0}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="players" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Neuen Spieler erstellen</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Team auswählen</Label>
-                    <Select value={newPlayer.teamId} onValueChange={(value) => setNewPlayer({ ...newPlayer, teamId: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Team wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {teams.map((t) => (
-                          <SelectItem key={t._id} value={t._id}>
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="player-name">Spielername</Label>
-                    <Input
-                      id="player-name"
-                      value={newPlayer.name}
-                      onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
-                      placeholder="Max Mustermann"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="player-number">Nummer</Label>
-                    <Input
-                      id="player-number"
-                      type="number"
-                      value={newPlayer.number}
-                      onChange={(e) => setNewPlayer({ ...newPlayer, number: e.target.value })}
-                      placeholder="7"
-                    />
-                  </div>
-                </div>
-                <Button onClick={createPlayer} disabled={loading || !newPlayer.teamId}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Spieler erstellen
-                </Button>
-              </CardContent>
-            </Card>
-
-            {players.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Alle Spieler</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Nummer</TableHead>
-                        <TableHead>Team</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {players.map((player) => (
-                        <TableRow key={player._id}>
-                          <TableCell className="font-medium">{player.name}</TableCell>
-                          <TableCell>{player.number || '-'}</TableCell>
-                          <TableCell>{player.teamId?.name || '-'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="schedule" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Spielplan generieren</CardTitle>
+                <CardTitle>Turnier auswählen</CardTitle>
                 <CardDescription>
-                  Erstellt automatisch einen "Jeder gegen jeden" Spielplan
+                  Wähle ein Turnier aus, um Teams, Spieler und Spielplan zu verwalten
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Turnier auswählen</Label>
-                  <Select value={selectedTournament} onValueChange={setSelectedTournament}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Turnier wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tournaments.map((t) => (
-                        <SelectItem key={t._id} value={t._id}>
-                          {t.name} ({t.category}) - {t.teams?.length || 0} Teams
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={generateSchedule} disabled={loading || !selectedTournament}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Spielplan generieren
-                </Button>
-                <p className="text-sm text-gray-600">
-                  {selectedTournament && teams.length > 0 && (
-                    <span>
-                      Erstellt {(teams.length * (teams.length - 1)) / 2} Spiele für {teams.length} Teams
-                    </span>
-                  )}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Games Overview */}
-            {selectedTournament && games.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ClipboardCheck className="w-6 h-6 text-orange-500" />
-                    Spielplan Übersicht
-                  </CardTitle>
-                  <CardDescription>
-                    Alle Spiele dieses Turniers mit Scoring-Zugang
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {games.map((game) => (
-                      <div key={game._id} className="flex items-center justify-between p-4 border rounded-lg bg-white">
-                        <div className="flex items-center gap-4">
-                          {getStatusIcon(game.status)}
+              <CardContent>
+                <div className="grid gap-4">
+                  {tournaments.map((tournament) => (
+                    <Card 
+                      key={tournament._id} 
+                      className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-orange-300"
+                      onClick={() => {
+                        setSelectedTournament(tournament._id);
+                        setSelectedTournamentName(tournament.name);
+                      }}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-semibold">
-                              {game.teamA.name} vs {game.teamB.name}
-                            </h4>
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              {getStatusBadge(game.status)}
-                              <span>Zeit: {formatTime(game.scheduledTime)}</span>
-                              {(game.status === 'live' || game.status === 'finished') && (
-                                <span className="font-medium">
-                                  Stand: {game.scoreA} : {game.scoreB}
-                                </span>
-                              )}
+                            <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                            <CardDescription>Kategorie: {tournament.category}</CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600">
+                              {tournament.teams?.length || 0} Teams • {tournament.games?.length || 0} Spiele
                             </div>
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                tournament.published
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="secondary"
-                            onClick={() => router.push(`/scorer/${game._id}`)}
-                            className="flex items-center gap-2"
-                          >
-                            <ClipboardCheck className="w-4 h-4" />
-                            Scoring öffnen
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      </CardHeader>
+                    </Card>
+                  ))}
+                  {tournaments.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      Noch keine Turniere vorhanden. Erstelle dein erstes Turnier oben.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          // Tournament Management View
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-orange-500" />
+                      {selectedTournamentName}
+                    </CardTitle>
+                    <CardDescription>Verwalte Teams, Spieler und Spielplan für dieses Turnier</CardDescription>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSelectedTournament('');
+                      setSelectedTournamentName('');
+                      setTeams([]);
+                      setPlayers([]);
+                      setGames([]);
+                    }}
+                  >
+                    ← Zurück zu Turnieren
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Tabs defaultValue="teams" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="teams">
+                  <Users className="w-4 h-4 mr-2" />
+                  Teams
+                </TabsTrigger>
+                <TabsTrigger value="players">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Spieler
+                </TabsTrigger>
+                <TabsTrigger value="schedule">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Spielplan
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="teams" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Neues Team erstellen</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="team-name">Teamname</Label>
+                      <Input
+                        id="team-name"
+                        value={newTeam.name}
+                        onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                        placeholder="Lakers"
+                      />
+                    </div>
+                    <Button onClick={createTeam} disabled={loading}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Team erstellen
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Teams in diesem Turnier</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Team</TableHead>
+                          <TableHead>Spieleranzahl</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {teams.map((team) => (
+                          <TableRow key={team._id}>
+                            <TableCell className="font-medium">{team.name}</TableCell>
+                            <TableCell>{team.players?.length || 0}</TableCell>
+                          </TableRow>
+                        ))}
+                        {teams.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center text-gray-500 py-8">
+                              Noch keine Teams für dieses Turnier erstellt
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="players" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Neuen Spieler erstellen</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Team auswählen</Label>
+                        <Select value={newPlayer.teamId} onValueChange={(value) => setNewPlayer({ ...newPlayer, teamId: value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Team wählen" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teams.map((t) => (
+                              <SelectItem key={t._id} value={t._id}>
+                                {t.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-name">Spielername</Label>
+                        <Input
+                          id="player-name"
+                          value={newPlayer.name}
+                          onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
+                          placeholder="Max Mustermann"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="player-number">Nummer</Label>
+                        <Input
+                          id="player-number"
+                          type="number"
+                          value={newPlayer.number}
+                          onChange={(e) => setNewPlayer({ ...newPlayer, number: e.target.value })}
+                          placeholder="7"
+                        />
+                      </div>
+                    </div>
+                    <Button onClick={createPlayer} disabled={loading || !newPlayer.teamId || teams.length === 0}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Spieler erstellen
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Alle Spieler in diesem Turnier</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Nummer</TableHead>
+                          <TableHead>Team</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {players.map((player) => (
+                          <TableRow key={player._id}>
+                            <TableCell className="font-medium">{player.name}</TableCell>
+                            <TableCell>{player.number || '-'}</TableCell>
+                            <TableCell>{player.teamId?.name || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                        {players.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-gray-500 py-8">
+                              Noch keine Spieler für dieses Turnier erstellt
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="schedule" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Spielplan generieren</CardTitle>
+                    <CardDescription>
+                      Erstellt automatisch einen "Jeder gegen jeden" Spielplan für alle Teams
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Button onClick={generateSchedule} disabled={loading || teams.length < 2}>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Spielplan generieren
+                    </Button>
+                    <p className="text-sm text-gray-600">
+                      {teams.length >= 2 ? (
+                        <span>
+                          Erstellt {(teams.length * (teams.length - 1)) / 2} Spiele für {teams.length} Teams
+                        </span>
+                      ) : (
+                        <span>Mindestens 2 Teams erforderlich für Spielplan-Generierung</span>
+                      )}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {games.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ClipboardCheck className="w-6 h-6 text-orange-500" />
+                        Spielplan Übersicht
+                      </CardTitle>
+                      <CardDescription>
+                        Alle Spiele dieses Turniers mit Scoring-Zugang
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {games.map((game) => (
+                          <div key={game._id} className="flex items-center justify-between p-4 border rounded-lg bg-white">
+                            <div className="flex items-center gap-4">
+                              {getStatusIcon(game.status)}
+                              <div>
+                                <h4 className="font-semibold">
+                                  {game.teamA.name} vs {game.teamB.name}
+                                </h4>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  {getStatusBadge(game.status)}
+                                  <span>Zeit: {formatTime(game.scheduledTime)}</span>
+                                  {(game.status === 'live' || game.status === 'finished') && (
+                                    <span className="font-medium">
+                                      Stand: {game.scoreA} : {game.scoreB}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="secondary"
+                                onClick={() => router.push(`/scorer/${game._id}`)}
+                                className="flex items-center gap-2"
+                              >
+                                <ClipboardCheck className="w-4 h-4" />
+                                Scoring öffnen
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                    </Card>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );
