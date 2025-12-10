@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home } from 'lucide-react';
+import { Trophy, Users, UserPlus, Calendar, LogOut, Plus, ClipboardCheck, Clock, Play, CheckCircle, Home, Edit2, Check, X } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 interface Tournament {
@@ -65,6 +65,12 @@ export default function AdminPage() {
   const [newTournament, setNewTournament] = useState({ name: '', category: '', usePlayerNumbers: false });
   const [newTeam, setNewTeam] = useState({ name: '', tournamentId: '' });
   const [newPlayer, setNewPlayer] = useState({ name: '', teamId: '', number: '' });
+
+  // Editing states
+  const [editingTournament, setEditingTournament] = useState<string | null>(null);
+  const [editingTeam, setEditingTeam] = useState<string | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -249,6 +255,94 @@ export default function AdminPage() {
     }
   };
 
+  const updateTournamentName = async (tournamentId: string, newName: string) => {
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (res.ok) {
+        toast.success('Turnier-Name aktualisiert');
+        fetchTournaments();
+        setEditingTournament(null);
+        setEditingValues({});
+      }
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren');
+    }
+  };
+
+  const updateTeamName = async (teamId: string, newName: string) => {
+    try {
+      const res = await fetch(`/api/teams/${teamId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (res.ok) {
+        toast.success('Team-Name aktualisiert');
+        fetchTeams(selectedTournament);
+        setEditingTeam(null);
+        setEditingValues({});
+      }
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren');
+    }
+  };
+
+  const updatePlayerName = async (playerId: string, newName: string) => {
+    try {
+      const res = await fetch(`/api/players/${playerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (res.ok) {
+        toast.success('Spieler-Name aktualisiert');
+        fetchTeams(selectedTournament);
+        setEditingPlayer(null);
+        setEditingValues({});
+      }
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren');
+    }
+  };
+
+  const startEditing = (type: string, id: string, currentValue: string) => {
+    if (type === 'tournament') setEditingTournament(id);
+    else if (type === 'team') setEditingTeam(id);
+    else if (type === 'player') setEditingPlayer(id);
+    
+    setEditingValues({ [id]: currentValue });
+  };
+
+  const cancelEditing = () => {
+    setEditingTournament(null);
+    setEditingTeam(null);
+    setEditingPlayer(null);
+    setEditingValues({});
+  };
+
+  const saveEdit = async (type: string, id: string) => {
+    const newValue = editingValues[id];
+    if (!newValue || newValue.trim() === '') {
+      toast.error('Name darf nicht leer sein');
+      return;
+    }
+
+    if (type === 'tournament') {
+      await updateTournamentName(id, newValue.trim());
+    } else if (type === 'team') {
+      await updateTeamName(id, newValue.trim());
+    } else if (type === 'player') {
+      await updatePlayerName(id, newValue.trim());
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -401,22 +495,65 @@ export default function AdminPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              {editingTournament === tournament._id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingValues[tournament._id] || ''}
+                                    onChange={(e) => setEditingValues({ ...editingValues, [tournament._id]: e.target.value })}
+                                    className="text-lg font-semibold h-8"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit('tournament', tournament._id);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button size="sm" variant="ghost" onClick={() => saveEdit('tournament', tournament._id)}>
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {tournament.name}
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => startEditing('tournament', tournament._id, tournament.name)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </CardTitle>
                             <CardDescription>Kategorie: {tournament.category}</CardDescription>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-gray-600">
                               {tournament.teams?.length || 0} Teams • {tournament.games?.length || 0} Spiele
                             </div>
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                tournament.published
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-1 rounded text-xs ${
+                                  tournament.published
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {tournament.published ? 'Veröffentlicht' : 'Entwurf'}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant={tournament.published ? "destructive" : "default"}
+                                onClick={() => togglePublished(tournament._id, tournament.published)}
+                                className="text-xs px-2 py-1 h-auto"
+                              >
+                                {tournament.published ? 'Deaktivieren' : 'Veröffentlichen'}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardHeader>
@@ -514,7 +651,40 @@ export default function AdminPage() {
                       <TableBody>
                         {teams.map((team) => (
                           <TableRow key={team._id}>
-                            <TableCell className="font-medium">{team.name}</TableCell>
+                            <TableCell className="font-medium">
+                              {editingTeam === team._id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingValues[team._id] || ''}
+                                    onChange={(e) => setEditingValues({ ...editingValues, [team._id]: e.target.value })}
+                                    className="font-medium h-8"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit('team', team._id);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button size="sm" variant="ghost" onClick={() => saveEdit('team', team._id)}>
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {team.name}
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => startEditing('team', team._id, team.name)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell>{team.players?.length || 0}</TableCell>
                           </TableRow>
                         ))}
@@ -598,7 +768,40 @@ export default function AdminPage() {
                       <TableBody>
                         {players.map((player) => (
                           <TableRow key={player._id}>
-                            <TableCell className="font-medium">{player.name}</TableCell>
+                            <TableCell className="font-medium">
+                              {editingPlayer === player._id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingValues[player._id] || ''}
+                                    onChange={(e) => setEditingValues({ ...editingValues, [player._id]: e.target.value })}
+                                    className="font-medium h-8"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit('player', player._id);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button size="sm" variant="ghost" onClick={() => saveEdit('player', player._id)}>
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {player.name}
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => startEditing('player', player._id, player.name)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
                             {selectedTournamentData?.usePlayerNumbers && <TableCell>{player.number || '-'}</TableCell>}
                             <TableCell>{player.teamId?.name || '-'}</TableCell>
                           </TableRow>
